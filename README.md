@@ -5,7 +5,7 @@ This project allows you to extract stream URLs from a given URL using the Tango 
 ## Example
 
 Given the following input URL:
-http://localhost/tango/tango.php?streamid=zfv1UB7Puk0Hne9biD4T7Q (https://tango.me/stream/zfv1UB7Puk0Hne9biD4T7Q)
+http://localhost/tango.php?streamid=zfv1UB7Puk0Hne9biD4T7Q (https://tango.me/stream/zfv1UB7Puk0Hne9biD4T7Q)
 
 The output will be in the following format:
 
