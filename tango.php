@@ -42,6 +42,7 @@ function getTangoStreamInfo($streamId) {
 
     $response = curl_exec($ch);
     
+    // Hata kontrolü
     if (curl_errno($ch)) {
         return ['error' => true, 'message' => "cURL Error: ".curl_error($ch)];
     }
@@ -53,20 +54,36 @@ function getTangoStreamInfo($streamId) {
         return ['error' => true, 'message' => "HTTP Error: $httpCode"];
     }
 
-
+    // Hex'e çevirerek binary içinde URL ara
     $hexResponse = bin2hex($response);
-    $urlPattern = '68747470733a2f2f63696e656d612d'; 
+    $urlPattern = '68747470733a2f2f63696e656d612d'; // "https://cinema-" hex karşılığı
     $urls = [];
     $position = 0;
 
     while (($pos = strpos($hexResponse, $urlPattern, $position)) !== false) {
-        $urlHex = substr($hexResponse, $pos, 600); 
+        $urlHex = substr($hexResponse, $pos, 600); // URL'ler ~300 karakteri geçmiyor
         $url = hex2bin($urlHex);
         
+        // URL'yi sonlandıran ilk boşluk/control karakterini bul
         preg_match('/https:\/\/[^\s\x00-\x1F]+/i', $url, $matches);
         if (!empty($matches[0])) {
             $cleanUrl = filter_var($matches[0], FILTER_SANITIZE_URL);
-            $urls[] = $cleanUrl;
+            
+            // URL'yi expire_at parametresine göre düzenle
+            $urlParts = parse_url($cleanUrl);
+            parse_str($urlParts['query'], $queryParams);
+            
+            if (isset($queryParams['expire_at'])) {
+                // Sadece rakam karakterlerini al
+                $cleanExpireAt = preg_replace('/[^0-9]/', '', $queryParams['expire_at']);
+                $queryParams['expire_at'] = $cleanExpireAt;
+                
+                // Güncellenmiş URL'yi oluştur
+                $newQuery = http_build_query($queryParams);
+                $cleanUrl = $urlParts['scheme'] . '://' . $urlParts['host'] . $urlParts['path'] . '?' . $newQuery;
+                
+                $urls[] = $cleanUrl;
+            }
         }
         $position = $pos + 1;
     }
